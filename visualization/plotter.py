@@ -94,9 +94,9 @@ class StockPlotter:
         ax.set_xlabel('日期', fontsize=12)
         ax.set_ylabel('PE值', fontsize=12)
         
-        # 格式化x轴日期
+        # 格式化x轴日期 - 只显示年月，间隔更大
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
         
         # 添加网格
@@ -113,8 +113,8 @@ class StockPlotter:
     
     def plot_price_timeline(self,
                            figsize: Tuple[int, int] = (14, 6),
-                           show_ma: bool = True,
-                           ma_periods: List[int] = [20, 60],
+                           show_ma: bool = False,
+                           ma_periods: List[int] = [],
                            save_path: Optional[str] = None) -> Figure:
         """
         绘制股价时间序列图
@@ -147,9 +147,9 @@ class StockPlotter:
         ax.set_xlabel('日期', fontsize=12)
         ax.set_ylabel('股价 (元)', fontsize=12)
         
-        # 格式化x轴日期
+        # 格式化x轴日期 - 只显示年月，间隔更大
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
         
         # 添加网格
@@ -211,16 +211,7 @@ class StockPlotter:
         ax2.plot(self.data['日期'], self.data['股价'],
                 label='股价', color='darkgreen', linewidth=2)
         
-        # 添加20日和60日均线
-        if len(self.data) >= 20:
-            ma20 = self.data['股价'].rolling(window=20).mean()
-            ax2.plot(self.data['日期'], ma20,
-                    label='MA20', color='orange', alpha=0.7, linewidth=1.5)
-        
-        if len(self.data) >= 60:
-            ma60 = self.data['股价'].rolling(window=60).mean()
-            ax2.plot(self.data['日期'], ma60,
-                    label='MA60', color='red', alpha=0.7, linewidth=1.5)
+        # 不显示均线，保持图表简洁
         
         ax2.set_xlabel('日期', fontsize=12)
         ax2.set_ylabel('股价 (元)', fontsize=12)
@@ -289,6 +280,116 @@ class StockPlotter:
         
         return fig
     
+    def plot_all_in_one(self,
+                        figsize: Tuple[int, int] = (16, 12),
+                        save_path: Optional[str] = None) -> Figure:
+        """
+        在一个图中显示所有图表
+        
+        Args:
+            figsize: 图表大小
+            save_path: 保存路径
+            
+        Returns:
+            matplotlib Figure对象
+        """
+        fig = plt.figure(figsize=figsize)
+        
+        # 创建2x2的子图布局
+        # 左上：PE时间序列
+        ax1 = plt.subplot(2, 2, 1)
+        ax1.plot(self.data['日期'], self.data['PE'],
+                label='PE值', color='blue', linewidth=2)
+        
+        # 添加PE区间线
+        if all(col in self.data.columns for col in ['PE危险值', 'PE中位值', 'PE机会值']):
+            try:
+                danger_vals = pd.to_numeric(self.data['PE危险值'], errors='coerce')
+                median_vals = pd.to_numeric(self.data['PE中位值'], errors='coerce')
+                chance_vals = pd.to_numeric(self.data['PE机会值'], errors='coerce')
+                
+                if not danger_vals.isna().all():
+                    ax1.axhline(y=danger_vals.iloc[-1], color='red',
+                               linestyle='--', alpha=0.5, label='危险值')
+                if not median_vals.isna().all():
+                    ax1.axhline(y=median_vals.iloc[-1], color='orange',
+                               linestyle='--', alpha=0.5, label='中位值')
+                if not chance_vals.isna().all():
+                    ax1.axhline(y=chance_vals.iloc[-1], color='green',
+                               linestyle='--', alpha=0.5, label='机会值')
+            except:
+                pass
+        
+        ax1.set_title('PE时间序列', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('PE值', fontsize=10)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(loc='best', fontsize=8)
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
+        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
+        
+        # 右上：股价时间序列
+        ax2 = plt.subplot(2, 2, 2)
+        ax2.plot(self.data['日期'], self.data['股价'],
+                label='股价', color='darkgreen', linewidth=2)
+        ax2.set_title('股价走势', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('股价 (元)', fontsize=10)
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(loc='best', fontsize=8)
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
+        plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
+        
+        # 左下：PE分布直方图
+        ax3 = plt.subplot(2, 2, 3)
+        n, bins, patches = ax3.hist(self.data['PE'], bins=30,
+                                   edgecolor='black', alpha=0.7)
+        
+        mean_pe = self.data['PE'].mean()
+        median_pe = self.data['PE'].median()
+        current_pe = self.data['PE'].iloc[-1]
+        
+        ax3.axvline(mean_pe, color='red', linestyle='--',
+                   linewidth=1.5, label=f'均值: {mean_pe:.1f}')
+        ax3.axvline(median_pe, color='green', linestyle='--',
+                   linewidth=1.5, label=f'中位数: {median_pe:.1f}')
+        ax3.axvline(current_pe, color='blue', linestyle='-',
+                   linewidth=1.5, label=f'当前: {current_pe:.1f}')
+        
+        ax3.set_title('PE分布', fontsize=12, fontweight='bold')
+        ax3.set_xlabel('PE值', fontsize=10)
+        ax3.set_ylabel('频数', fontsize=10)
+        ax3.grid(True, alpha=0.3)
+        ax3.legend(fontsize=8)
+        
+        # 右下：PE vs 股价散点图
+        ax4 = plt.subplot(2, 2, 4)
+        scatter = ax4.scatter(self.data['PE'], self.data['股价'],
+                             c=range(len(self.data)), cmap='viridis',
+                             alpha=0.6, s=10)
+        ax4.set_title('PE与股价关系', fontsize=12, fontweight='bold')
+        ax4.set_xlabel('PE值', fontsize=10)
+        ax4.set_ylabel('股价 (元)', fontsize=10)
+        ax4.grid(True, alpha=0.3)
+        
+        # 添加趋势线
+        z = np.polyfit(self.data['PE'].values, self.data['股价'].values, 1)
+        p = np.poly1d(z)
+        ax4.plot(self.data['PE'].values, p(self.data['PE'].values),
+                "r--", alpha=0.8, linewidth=1, label='趋势线')
+        ax4.legend(fontsize=8)
+        
+        # 添加总标题
+        fig.suptitle('恒瑞医药 综合分析图表', fontsize=16, fontweight='bold', y=0.98)
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
+        if save_path:
+            plt.savefig(save_path, dpi=100, bbox_inches='tight')
+            print(f"综合图表已保存至: {save_path}")
+        
+        return fig
+    
     def generate_report(self, output_dir: str = 'charts'):
         """
         生成完整的可视化报告
@@ -299,7 +400,10 @@ class StockPlotter:
         import os
         os.makedirs(output_dir, exist_ok=True)
         
-        # 生成各种图表
+        # 生成综合图表
+        self.plot_all_in_one(save_path=f'{output_dir}/all_in_one.png')
+        
+        # 也可以生成单独的图表
         self.plot_pe_timeline(save_path=f'{output_dir}/pe_timeline.png')
         self.plot_price_timeline(save_path=f'{output_dir}/price_timeline.png')
         self.plot_combined(save_path=f'{output_dir}/combined_chart.png')
@@ -307,6 +411,7 @@ class StockPlotter:
         
         print(f"\n可视化报告已生成至 {output_dir} 目录")
         print("包含以下图表：")
+        print("  - all_in_one.png: 综合分析图表（推荐）")
         print("  - pe_timeline.png: PE时间序列图")
         print("  - price_timeline.png: 股价走势图")
         print("  - combined_chart.png: PE与股价组合图")
