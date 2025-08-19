@@ -296,10 +296,15 @@ class StockPlotter:
         fig = plt.figure(figsize=figsize)
         
         # 创建2x2的子图布局
-        # 左上：PE时间序列
+        # 左上：PE时间序列与股价双轴图
         ax1 = plt.subplot(2, 2, 1)
-        ax1.plot(self.data['日期'], self.data['PE'],
-                label='PE值', color='blue', linewidth=2)
+        
+        # 绘制PE（左轴）
+        ax1_pe = ax1
+        line1 = ax1_pe.plot(self.data['日期'], self.data['PE'],
+                           label='PE值', color='blue', linewidth=2)
+        ax1_pe.set_ylabel('PE值', fontsize=10, color='blue')
+        ax1_pe.tick_params(axis='y', labelcolor='blue')
         
         # 添加PE区间线
         if all(col in self.data.columns for col in ['PE危险值', 'PE中位值', 'PE机会值']):
@@ -309,21 +314,31 @@ class StockPlotter:
                 chance_vals = pd.to_numeric(self.data['PE机会值'], errors='coerce')
                 
                 if not danger_vals.isna().all():
-                    ax1.axhline(y=danger_vals.iloc[-1], color='red',
-                               linestyle='--', alpha=0.5, label='危险值')
+                    ax1_pe.axhline(y=danger_vals.iloc[-1], color='red',
+                                  linestyle='--', alpha=0.5, label='PE危险值')
                 if not median_vals.isna().all():
-                    ax1.axhline(y=median_vals.iloc[-1], color='orange',
-                               linestyle='--', alpha=0.5, label='中位值')
+                    ax1_pe.axhline(y=median_vals.iloc[-1], color='orange',
+                                  linestyle='--', alpha=0.5, label='PE中位值')
                 if not chance_vals.isna().all():
-                    ax1.axhline(y=chance_vals.iloc[-1], color='green',
-                               linestyle='--', alpha=0.5, label='机会值')
+                    ax1_pe.axhline(y=chance_vals.iloc[-1], color='green',
+                                  linestyle='--', alpha=0.5, label='PE机会值')
             except:
                 pass
         
-        ax1.set_title('PE时间序列', fontsize=12, fontweight='bold')
-        ax1.set_ylabel('PE值', fontsize=10)
+        # 创建右轴用于股价
+        ax1_price = ax1.twinx()
+        line2 = ax1_price.plot(self.data['日期'], self.data['股价'],
+                              label='股价', color='purple', linewidth=1.5, alpha=0.7)
+        ax1_price.set_ylabel('股价 (元)', fontsize=10, color='purple')
+        ax1_price.tick_params(axis='y', labelcolor='purple')
+        
+        # 合并图例
+        lines1, labels1 = ax1_pe.get_legend_handles_labels()
+        lines2, labels2 = ax1_price.get_legend_handles_labels()
+        ax1_pe.legend(lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=7)
+        
+        ax1.set_title('PE与股价时间序列', fontsize=12, fontweight='bold')
         ax1.grid(True, alpha=0.3)
-        ax1.legend(loc='best', fontsize=8)
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
         ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
