@@ -328,21 +328,50 @@ class StockPlotter:
         ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
         
-        # 右上：股价时间序列
+        # 右上：股价走势与PE分位数
         ax2 = plt.subplot(2, 2, 2)
-        ax2.plot(self.data['日期'], self.data['股价'],
-                label='股价', color='darkgreen', linewidth=2)
-        ax2.set_title('股价走势', fontsize=12, fontweight='bold')
-        ax2.set_ylabel('股价 (元)', fontsize=10)
-        ax2.grid(True, alpha=0.3)
-        ax2.legend(loc='best', fontsize=8)
+        
+        # 绘制股价（左轴）
+        ax2_price = ax2
+        line1 = ax2_price.plot(self.data['日期'], self.data['股价'],
+                               label='股价', color='darkgreen', linewidth=2)
+        ax2_price.set_ylabel('股价 (元)', fontsize=10, color='darkgreen')
+        ax2_price.tick_params(axis='y', labelcolor='darkgreen')
+        ax2_price.grid(True, alpha=0.3)
+        
+        # 创建右轴用于PE分位数
+        ax2_percentile = ax2.twinx()
+        
+        # 处理PE分位数数据
+        if 'PE分位数' in self.data.columns:
+            try:
+                pe_percentile = pd.to_numeric(self.data['PE分位数'], errors='coerce')
+                line2 = ax2_percentile.plot(self.data['日期'], pe_percentile * 100,
+                                           label='PE分位数', color='orange', linewidth=1.5, alpha=0.7)
+                ax2_percentile.set_ylabel('PE分位数 (%)', fontsize=10, color='orange')
+                ax2_percentile.tick_params(axis='y', labelcolor='orange')
+                ax2_percentile.set_ylim(0, 100)
+                
+                # 添加分位数参考线
+                ax2_percentile.axhline(y=80, color='red', linestyle=':', alpha=0.3)
+                ax2_percentile.axhline(y=50, color='gray', linestyle=':', alpha=0.3)
+                ax2_percentile.axhline(y=20, color='green', linestyle=':', alpha=0.3)
+            except:
+                pass
+        
+        ax2.set_title('股价走势与PE分位数', fontsize=12, fontweight='bold')
         ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
         ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
         plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
         
-        # 左下：PE分布直方图
-        ax3 = plt.subplot(2, 2, 3)
-        n, bins, patches = ax3.hist(self.data['PE'], bins=30,
+        # 合并图例
+        lines1, labels1 = ax2_price.get_legend_handles_labels()
+        lines2, labels2 = ax2_percentile.get_legend_handles_labels()
+        ax2_price.legend(lines1 + lines2, labels1 + labels2, loc='best', fontsize=8)
+        
+        # 下方：PE分布直方图（占据整个下半部分）
+        ax3 = plt.subplot(2, 1, 2)
+        n, bins, patches = ax3.hist(self.data['PE'], bins=50,
                                    edgecolor='black', alpha=0.7)
         
         mean_pe = self.data['PE'].mean()
@@ -354,30 +383,13 @@ class StockPlotter:
         ax3.axvline(median_pe, color='green', linestyle='--',
                    linewidth=1.5, label=f'中位数: {median_pe:.1f}')
         ax3.axvline(current_pe, color='blue', linestyle='-',
-                   linewidth=1.5, label=f'当前: {current_pe:.1f}')
+                   linewidth=2, label=f'当前: {current_pe:.1f}')
         
-        ax3.set_title('PE分布', fontsize=12, fontweight='bold')
+        ax3.set_title('PE历史分布', fontsize=12, fontweight='bold')
         ax3.set_xlabel('PE值', fontsize=10)
         ax3.set_ylabel('频数', fontsize=10)
         ax3.grid(True, alpha=0.3)
         ax3.legend(fontsize=8)
-        
-        # 右下：PE vs 股价散点图
-        ax4 = plt.subplot(2, 2, 4)
-        scatter = ax4.scatter(self.data['PE'], self.data['股价'],
-                             c=range(len(self.data)), cmap='viridis',
-                             alpha=0.6, s=10)
-        ax4.set_title('PE与股价关系', fontsize=12, fontweight='bold')
-        ax4.set_xlabel('PE值', fontsize=10)
-        ax4.set_ylabel('股价 (元)', fontsize=10)
-        ax4.grid(True, alpha=0.3)
-        
-        # 添加趋势线
-        z = np.polyfit(self.data['PE'].values, self.data['股价'].values, 1)
-        p = np.poly1d(z)
-        ax4.plot(self.data['PE'].values, p(self.data['PE'].values),
-                "r--", alpha=0.8, linewidth=1, label='趋势线')
-        ax4.legend(fontsize=8)
         
         # 添加总标题
         fig.suptitle('恒瑞医药 综合分析图表', fontsize=16, fontweight='bold', y=0.98)
