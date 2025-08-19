@@ -130,6 +130,10 @@ class DataReader:
             # 尝试转换为数值类型
             processed['PE分位数'] = pd.to_numeric(processed['PE分位数'], errors='coerce')
         
+        # 计算回撤（当前股价/一年内最高股价 - 1）
+        if '股价' in processed.columns:
+            processed = self.calculate_drawdown(processed)
+        
         self.processed_data = processed
         
         print(f"\n数据处理完成!")
@@ -137,6 +141,38 @@ class DataReader:
         print(f"最终列名: {list(processed.columns)}")
         
         return processed
+    
+    def calculate_drawdown(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        计算回撤（当前股价/一年内最高股价 - 1）
+        
+        Args:
+            data: 包含股价的数据DataFrame
+            
+        Returns:
+            添加了回撤列的DataFrame
+        """
+        data = data.copy()
+        
+        # 确保日期列是datetime类型
+        if '日期' in data.columns:
+            data['日期'] = pd.to_datetime(data['日期'])
+            # 按日期排序（从旧到新）
+            data = data.sort_values('日期')
+        
+        # 计算252个交易日（约一年）的滚动最高价
+        window_size = 252
+        data['一年内最高价'] = data['股价'].rolling(window=window_size, min_periods=1).max()
+        
+        # 计算回撤
+        data['回撤'] = data['股价'] / data['一年内最高价'] - 1
+        
+        # 回撤以百分比形式存储
+        data['回撤'] = data['回撤'] * 100
+        
+        print(f"回撤计算完成，范围: {data['回撤'].min():.2f}% 到 {data['回撤'].max():.2f}%")
+        
+        return data
     
     def get_summary(self) -> Dict[str, Any]:
         """
