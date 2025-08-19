@@ -16,9 +16,15 @@ def main():
     # 创建可视化对象
     plotter = StockPlotter(data)
     
+    # 确保输出目录存在
+    import os
+    output_dir = 'visualization_report'
+    os.makedirs(output_dir, exist_ok=True)
+    
     # 生成综合图表
     print("\n生成综合分析图表...")
-    plotter.plot_all_in_one(save_path='all_in_one.png')
+    output_path = os.path.join(output_dir, 'all_in_one.png')
+    plotter.plot_all_in_one(save_path=output_path)
     
     # 数据统计
     print("\n数据统计:")
@@ -52,7 +58,7 @@ def main():
         print(f"  PE分位数: {latest['PE分位数']*100:.1f}%")
     
     print("\n" + "=" * 60)
-    print("图表已生成: all_in_one.png")
+    print(f"图表已生成: {output_path}")
     print("=" * 60)
 
 if __name__ == "__main__":

@@ -395,12 +395,32 @@ class StockPlotter:
         median_pe = self.data['PE'].median()
         current_pe = self.data['PE'].iloc[-1]
         
+        # 添加均值、中位数、当前值线
         ax3.axvline(mean_pe, color='red', linestyle='--',
                    linewidth=1.5, label=f'均值: {mean_pe:.1f}')
         ax3.axvline(median_pe, color='green', linestyle='--',
                    linewidth=1.5, label=f'中位数: {median_pe:.1f}')
         ax3.axvline(current_pe, color='blue', linestyle='-',
                    linewidth=2, label=f'当前: {current_pe:.1f}')
+        
+        # 添加危险值、中位值、机会值线（如果数据存在）
+        if 'PE危险值' in self.data.columns:
+            try:
+                danger_val = pd.to_numeric(self.data['PE危险值'].iloc[-1], errors='coerce')
+                if not pd.isna(danger_val):
+                    ax3.axvline(danger_val, color='darkred', linestyle=':',
+                               linewidth=2, label=f'危险值: {danger_val:.1f}')
+            except:
+                pass
+        
+        if 'PE机会值' in self.data.columns:
+            try:
+                chance_val = pd.to_numeric(self.data['PE机会值'].iloc[-1], errors='coerce')
+                if not pd.isna(chance_val):
+                    ax3.axvline(chance_val, color='darkgreen', linestyle=':',
+                               linewidth=2, label=f'机会值: {chance_val:.1f}')
+            except:
+                pass
         
         ax3.set_title('PE历史分布', fontsize=12, fontweight='bold')
         ax3.set_xlabel('PE值', fontsize=10)
