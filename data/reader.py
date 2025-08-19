@@ -124,6 +124,12 @@ class DataReader:
         # 重命名列
         processed = self.rename_columns(processed)
         
+        # 特殊处理PE分位数列中的"--"
+        if 'PE分位数' in processed.columns:
+            processed['PE分位数'] = processed['PE分位数'].replace('--', np.nan)
+            # 尝试转换为数值类型
+            processed['PE分位数'] = pd.to_numeric(processed['PE分位数'], errors='coerce')
+        
         self.processed_data = processed
         
         print(f"\n数据处理完成!")

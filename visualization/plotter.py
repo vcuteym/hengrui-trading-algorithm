@@ -345,19 +345,36 @@ class StockPlotter:
         # 处理PE分位数数据
         if 'PE分位数' in self.data.columns:
             try:
-                pe_percentile = pd.to_numeric(self.data['PE分位数'], errors='coerce')
-                line2 = ax2_percentile.plot(self.data['日期'], pe_percentile * 100,
-                                           label='PE分位数', color='orange', linewidth=1.5, alpha=0.7)
-                ax2_percentile.set_ylabel('PE分位数 (%)', fontsize=10, color='orange')
-                ax2_percentile.tick_params(axis='y', labelcolor='orange')
-                ax2_percentile.set_ylim(0, 100)
+                # PE分位数应该已经在数据处理阶段转换为数值类型
+                pe_percentile = self.data['PE分位数']
+                if pe_percentile.dtype == 'object':
+                    # 如果还是字符串类型，再次转换
+                    pe_percentile = pd.to_numeric(pe_percentile, errors='coerce')
                 
-                # 添加分位数参考线
-                ax2_percentile.axhline(y=80, color='red', linestyle=':', alpha=0.3)
-                ax2_percentile.axhline(y=50, color='gray', linestyle=':', alpha=0.3)
-                ax2_percentile.axhline(y=20, color='green', linestyle=':', alpha=0.3)
-            except:
-                pass
+                # 只绘制非缺失值
+                valid_mask = ~pe_percentile.isna()
+                if valid_mask.any():
+                    line2 = ax2_percentile.plot(self.data.loc[valid_mask, '日期'], 
+                                               pe_percentile[valid_mask] * 100,
+                                               label='PE分位数', color='orange', 
+                                               linewidth=1.5, alpha=0.7, marker='.', markersize=1)
+                    ax2_percentile.set_ylabel('PE分位数 (%)', fontsize=10, color='orange')
+                    ax2_percentile.tick_params(axis='y', labelcolor='orange')
+                    ax2_percentile.set_ylim(0, 100)
+                    
+                    # 添加分位数参考线
+                    ax2_percentile.axhline(y=80, color='red', linestyle=':', alpha=0.3, label='80%')
+                    ax2_percentile.axhline(y=50, color='gray', linestyle=':', alpha=0.3, label='50%')
+                    ax2_percentile.axhline(y=20, color='green', linestyle=':', alpha=0.3, label='20%')
+                    
+                    # 显示缺失值统计
+                    missing_pct = pe_percentile.isna().sum() / len(pe_percentile) * 100
+                    if missing_pct > 0:
+                        ax2_percentile.text(0.02, 0.95, f'PE分位数缺失率: {missing_pct:.1f}%', 
+                                          transform=ax2_percentile.transAxes, 
+                                          fontsize=8, alpha=0.6, verticalalignment='top')
+            except Exception as e:
+                print(f"绘制PE分位数时出错: {e}")
         
         ax2.set_title('股价走势与PE分位数', fontsize=12, fontweight='bold')
         ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
@@ -404,7 +421,7 @@ class StockPlotter:
     
     def generate_report(self, output_dir: str = 'charts'):
         """
-        生成完整的可视化报告
+        生成完整的可视化报告（只生成综合图表）
         
         Args:
             output_dir: 输出目录
@@ -412,19 +429,7 @@ class StockPlotter:
         import os
         os.makedirs(output_dir, exist_ok=True)
         
-        # 生成综合图表
+        # 只生成综合图表
         self.plot_all_in_one(save_path=f'{output_dir}/all_in_one.png')
         
-        # 也可以生成单独的图表
-        self.plot_pe_timeline(save_path=f'{output_dir}/pe_timeline.png')
-        self.plot_price_timeline(save_path=f'{output_dir}/price_timeline.png')
-        self.plot_combined(save_path=f'{output_dir}/combined_chart.png')
-        self.plot_pe_distribution(save_path=f'{output_dir}/pe_distribution.png')
-        
-        print(f"\n可视化报告已生成至 {output_dir} 目录")
-        print("包含以下图表：")
-        print("  - all_in_one.png: 综合分析图表（推荐）")
-        print("  - pe_timeline.png: PE时间序列图")
-        print("  - price_timeline.png: 股价走势图")
-        print("  - combined_chart.png: PE与股价组合图")
-        print("  - pe_distribution.png: PE分布图")
+        print(f"\n综合分析图表已生成至: {output_dir}/all_in_one.png")
