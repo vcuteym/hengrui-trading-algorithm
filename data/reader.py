@@ -64,8 +64,8 @@ class DataReader:
         print(data.isnull().sum())
         
         # 使用前向填充，然后后向填充处理边界情况
-        data = data.fillna(method='ffill')
-        data = data.fillna(method='bfill')
+        data = data.ffill()
+        data = data.bfill()
         
         # 如果还有缺失值（整列都是NaN的情况），使用该列的均值或0
         for col in data.columns:
