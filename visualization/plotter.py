@@ -401,8 +401,8 @@ class StockPlotter:
         lines2, labels2 = ax2_percentile.get_legend_handles_labels()
         ax2_price.legend(lines1 + lines2, labels1 + labels2, loc='best', fontsize=8)
         
-        # 下方：PE分布直方图（占据整个下半部分）
-        ax3 = plt.subplot(2, 1, 2)
+        # 左下：PE分布直方图
+        ax3 = plt.subplot(2, 2, 3)
         n, bins, patches = ax3.hist(self.data['PE'], bins=50,
                                    edgecolor='black', alpha=0.7)
         
@@ -442,6 +442,66 @@ class StockPlotter:
         ax3.set_ylabel('频数', fontsize=10)
         ax3.grid(True, alpha=0.3)
         ax3.legend(fontsize=8)
+        
+        # 右下：回撤与股价时间序列
+        ax4 = plt.subplot(2, 2, 4)
+        
+        # 检查是否有回撤数据
+        if '回撤' in self.data.columns:
+            # 绘制回撤（左轴）
+            ax4_drawdown = ax4
+            line1 = ax4_drawdown.fill_between(self.data['日期'], 0, self.data['回撤'],
+                                             where=(self.data['回撤'] <= 0),
+                                             color='red', alpha=0.3, label='回撤')
+            ax4_drawdown.plot(self.data['日期'], self.data['回撤'],
+                            color='darkred', linewidth=1.5, label='回撤率')
+            ax4_drawdown.set_ylabel('回撤 (%)', fontsize=10, color='darkred')
+            ax4_drawdown.tick_params(axis='y', labelcolor='darkred')
+            ax4_drawdown.set_ylim(self.data['回撤'].min() * 1.1, 5)
+            
+            # 添加参考线
+            ax4_drawdown.axhline(y=0, color='black', linestyle='-', alpha=0.3, linewidth=0.5)
+            ax4_drawdown.axhline(y=-10, color='orange', linestyle=':', alpha=0.5, label='-10%')
+            ax4_drawdown.axhline(y=-20, color='red', linestyle=':', alpha=0.5, label='-20%')
+            
+            # 创建右轴用于股价
+            ax4_price = ax4.twinx()
+            line2 = ax4_price.plot(self.data['日期'], self.data['股价'],
+                                  color='green', linewidth=1, alpha=0.7, label='股价')
+            ax4_price.set_ylabel('股价 (元)', fontsize=10, color='green')
+            ax4_price.tick_params(axis='y', labelcolor='green')
+            
+            # 标记最大回撤点
+            max_drawdown_idx = self.data['回撤'].idxmin()
+            max_drawdown_date = self.data.loc[max_drawdown_idx, '日期']
+            max_drawdown_value = self.data.loc[max_drawdown_idx, '回撤']
+            ax4_drawdown.scatter(max_drawdown_date, max_drawdown_value, 
+                                color='red', s=50, zorder=5)
+            ax4_drawdown.annotate(f'最大回撤: {max_drawdown_value:.1f}%',
+                                 xy=(max_drawdown_date, max_drawdown_value),
+                                 xytext=(10, -10), textcoords='offset points',
+                                 fontsize=8, color='red',
+                                 arrowprops=dict(arrowstyle='->', color='red', alpha=0.5))
+            
+            # 合并图例
+            lines1, labels1 = ax4_drawdown.get_legend_handles_labels()
+            lines2, labels2 = ax4_price.get_legend_handles_labels()
+            ax4_drawdown.legend(lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=7)
+        else:
+            # 如果没有回撤数据，只显示股价
+            ax4.plot(self.data['日期'], self.data['股价'],
+                    color='green', linewidth=1.5, label='股价')
+            ax4.set_ylabel('股价 (元)', fontsize=10)
+            ax4.legend(loc='best', fontsize=8)
+            ax4.text(0.5, 0.5, '回撤数据不可用', 
+                    transform=ax4.transAxes,
+                    fontsize=12, ha='center', va='center', alpha=0.5)
+        
+        ax4.set_title('回撤与股价走势', fontsize=12, fontweight='bold')
+        ax4.grid(True, alpha=0.3)
+        ax4.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        ax4.xaxis.set_major_locator(mdates.MonthLocator(interval=12))
+        plt.setp(ax4.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
         
         # 添加总标题
         fig.suptitle('恒瑞医药 综合分析图表', fontsize=16, fontweight='bold', y=0.98)
