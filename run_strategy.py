@@ -47,9 +47,57 @@ def main():
     
     # 5. 保存交易记录到文件
     if len(trades_df) > 0:
-        output_file = 'strategy_trades.csv'
-        trades_df.to_csv(output_file, index=False, encoding='utf-8-sig')
-        print(f"\n交易记录已保存至: {output_file}")
+        import os
+        os.makedirs('report', exist_ok=True)
+        
+        # 保存为Excel格式，使用xlsxwriter引擎以正确处理日期格式
+        output_file = 'report/strategy_trades.xlsx'
+        with pd.ExcelWriter(output_file, engine='xlsxwriter', datetime_format='yyyy-mm-dd') as writer:
+            # 从第二行开始写入数据，为单位行留出空间
+            trades_df.to_excel(writer, index=False, sheet_name='交易记录', startrow=1)
+            
+            # 获取工作簿和工作表对象
+            workbook = writer.book
+            worksheet = writer.sheets['交易记录']
+            
+            # 添加格式
+            header_format = workbook.add_format({
+                'bold': True,
+                'align': 'center',
+                'valign': 'vcenter',
+                'border': 1,
+                'bg_color': '#F0F0F0'
+            })
+            
+            unit_format = workbook.add_format({
+                'align': 'center',
+                'valign': 'vcenter',
+                'border': 1,
+                'italic': True,
+                'font_size': 9,
+                'bg_color': '#FAFAFA'
+            })
+            
+            # 写入列名（第一行）
+            for col_num, value in enumerate(trades_df.columns.values):
+                worksheet.write(0, col_num, value, header_format)
+            
+            # 写入单位行（第二行，原数据的第一行位置）
+            units = ['', '', '元', '', '%', '股', '元', '股', '元', '元', '元', '元', '元']
+            for col_num, unit in enumerate(units):
+                worksheet.write(1, col_num, unit, unit_format)
+            
+            # 设置列宽
+            worksheet.set_column('A:A', 12)  # 日期列
+            worksheet.set_column('B:B', 8)   # 操作列
+            worksheet.set_column('C:M', 12)  # 其他列（现在有13列）
+            
+        print(f"\n交易记录已保存至: {output_file} (Excel格式)")
+        
+        # 也保存一份CSV备份
+        csv_file = 'report/strategy_trades.csv'
+        trades_df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+        print(f"CSV备份已保存至: {csv_file}")
     
     return trades_df
 
@@ -90,8 +138,8 @@ def test_different_parameters():
             buy_count = len(trades_df[trades_df['操作'] == 'BUY'])
             sell_count = len(trades_df[trades_df['操作'] == 'SELL'])
             
-            if final_trade['总投入'] > 0:
-                return_rate = (final_trade['收益'] / final_trade['总投入']) * 100
+            if final_trade['现金流出'] > 0:
+                return_rate = (final_trade['总收益'] / final_trade['现金流出']) * 100
             else:
                 return_rate = 0
             
@@ -102,8 +150,10 @@ def test_different_parameters():
                 '卖出PE': sell_pe,
                 '买入次数': buy_count,
                 '卖出次数': sell_count,
-                '总投入': final_trade['总投入'],
-                '最终收益': final_trade['收益'],
+                '现金流出': final_trade['现金流出'],
+                '现金流入': final_trade['现金流入'],
+                '当前市值': final_trade['当前市值'],
+                '总收益': final_trade['总收益'],
                 '收益率': f"{return_rate:.2f}%"
             })
     

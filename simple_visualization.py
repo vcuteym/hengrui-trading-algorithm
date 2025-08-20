@@ -18,7 +18,7 @@ def main():
     
     # 确保输出目录存在
     import os
-    output_dir = 'visualization_report'
+    output_dir = 'report'
     os.makedirs(output_dir, exist_ok=True)
     
     # 生成综合图表

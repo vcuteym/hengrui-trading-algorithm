@@ -38,9 +38,10 @@ class TradeRecord:
     shares: float
     amount: float
     total_shares: float
-    total_invested: float
+    cash_outflow: float  # 现金流出（累计买入金额）
     current_value: float
-    profit: float
+    cash_inflow: float   # 现金流入（累计卖出金额）
+    total_profit: float   # 总收益 = 当前市值 - 现金流出 + 现金流入
 
 
 class TradingStrategy:
@@ -64,7 +65,8 @@ class TradingStrategy:
         # 初始化交易状态
         self.trades: List[TradeRecord] = []
         self.total_shares = 0.0
-        self.total_invested = 0.0
+        self.cash_outflow = 0.0  # 现金流出（累计买入金额）
+        self.cash_inflow = 0.0   # 现金流入（累计卖出金额）
         self.last_buy_date = None
         self.last_sell_date = None
         
@@ -130,11 +132,11 @@ class TradingStrategy:
         else:
             amount = self.config.buy_amount
             self.total_shares += shares
-            self.total_invested += amount
+            self.cash_outflow += amount  # 买入增加现金流出
             self.last_buy_date = date
         
         current_value = self.total_shares * price
-        profit = current_value - self.total_invested
+        total_profit = current_value - self.cash_outflow + self.cash_inflow
         
         return TradeRecord(
             date=date,
@@ -145,9 +147,10 @@ class TradingStrategy:
             shares=shares,
             amount=amount,
             total_shares=self.total_shares,
-            total_invested=self.total_invested,
+            cash_outflow=self.cash_outflow,
             current_value=current_value,
-            profit=profit
+            cash_inflow=self.cash_inflow,
+            total_profit=total_profit
         )
     
     def execute_sell(self, date: pd.Timestamp, price: float, pe: float, drawdown: float) -> TradeRecord:
@@ -156,11 +159,11 @@ class TradingStrategy:
         amount = shares_to_sell * price
         
         self.total_shares -= shares_to_sell
-        self.total_invested = self.total_invested * (1 - self.config.sell_ratio)
+        self.cash_inflow += amount  # 卖出增加现金流入
         self.last_sell_date = date
         
         current_value = self.total_shares * price
-        profit = current_value - self.total_invested + amount  # 包括卖出收入
+        total_profit = current_value - self.cash_outflow + self.cash_inflow
         
         return TradeRecord(
             date=date,
@@ -171,9 +174,10 @@ class TradingStrategy:
             shares=-shares_to_sell,  # 负数表示卖出
             amount=amount,
             total_shares=self.total_shares,
-            total_invested=self.total_invested,
+            cash_outflow=self.cash_outflow,
             current_value=current_value,
-            profit=profit
+            cash_inflow=self.cash_inflow,
+            total_profit=total_profit
         )
     
     def run_strategy(self) -> pd.DataFrame:
@@ -214,7 +218,7 @@ class TradingStrategy:
         if len(strategy_data) > 0 and self.total_shares > 0:
             last_row = strategy_data.iloc[-1]
             final_value = self.total_shares * last_row['股价']
-            final_profit = final_value - self.total_invested
+            final_profit = final_value - self.cash_outflow + self.cash_inflow
             
             # 添加最终持仓记录
             self.trades.append(TradeRecord(
@@ -226,9 +230,10 @@ class TradingStrategy:
                 shares=0,
                 amount=0,
                 total_shares=self.total_shares,
-                total_invested=self.total_invested,
+                cash_outflow=self.cash_outflow,
                 current_value=final_value,
-                profit=final_profit
+                cash_inflow=self.cash_inflow,
+                total_profit=final_profit
             ))
         
         return self.get_trades_dataframe()
@@ -254,9 +259,11 @@ class TradingStrategy:
                 '交易股数': trade.shares,
                 '交易金额': trade.amount,
                 '总持仓': trade.total_shares,
-                '总投入': trade.total_invested,
                 '当前市值': trade.current_value,
-                '收益': trade.profit
+                '现金流出': -trade.cash_outflow,  # 用负数表示流出
+                '现金流入': trade.cash_inflow,
+                '净现金流': -trade.cash_outflow + trade.cash_inflow,  # 净现金流 = 现金流出 + 现金流入
+                '总收益': trade.total_profit
             })
         
         return pd.DataFrame(records)
@@ -278,11 +285,12 @@ class TradingStrategy:
         print(f"  每次买入金额: {self.config.buy_amount:.0f}元")
         
         print(f"\n交易记录:")
-        print("-" * 100)
-        print(f"{'日期':<12} {'操作':<6} {'PE':>8} {'股价':>8} {'回撤':>8} {'交易股数':>10} {'交易金额':>10} {'总持仓':>10} {'总投入':>10} {'收益':>10}")
-        print("-" * 100)
+        print("-" * 130)
+        print(f"{'日期':<12} {'操作':<6} {'PE':>8} {'股价':>8} {'回撤':>8} {'交易股数':>10} {'交易金额':>10} {'总持仓':>10} {'当前市值':>10} {'现金流出':>10} {'现金流入':>10} {'净现金流':>10} {'总收益':>10}")
+        print("-" * 130)
         
         for trade in self.trades:
+            net_cash_flow = -trade.cash_outflow + trade.cash_inflow
             print(f"{trade.date.strftime('%Y-%m-%d'):<12} "
                   f"{trade.action:<6} "
                   f"{trade.pe:>8.2f} "
@@ -291,8 +299,11 @@ class TradingStrategy:
                   f"{trade.shares:>10.2f} "
                   f"{trade.amount:>10.0f} "
                   f"{trade.total_shares:>10.2f} "
-                  f"{trade.total_invested:>10.0f} "
-                  f"{trade.profit:>10.0f}")
+                  f"{trade.current_value:>10.0f} "
+                  f"{-trade.cash_outflow:>10.0f} "
+                  f"{trade.cash_inflow:>10.0f} "
+                  f"{net_cash_flow:>10.0f} "
+                  f"{trade.total_profit:>10.0f}")
         
         # 统计汇总
         buy_trades = [t for t in self.trades if t.action == 'BUY']
@@ -306,11 +317,12 @@ class TradingStrategy:
         if self.trades:
             final_trade = self.trades[-1]
             print(f"  最终持仓: {final_trade.total_shares:.2f}股")
-            print(f"  总投入资金: {final_trade.total_invested:.0f}元")
+            print(f"  现金流出: {final_trade.cash_outflow:.0f}元")
+            print(f"  现金流入: {final_trade.cash_inflow:.0f}元")
             print(f"  当前市值: {final_trade.current_value:.0f}元")
-            print(f"  总收益: {final_trade.profit:.0f}元")
-            if final_trade.total_invested > 0:
-                return_rate = (final_trade.profit / final_trade.total_invested) * 100
+            print(f"  总收益: {final_trade.total_profit:.0f}元")
+            if final_trade.cash_outflow > 0:
+                return_rate = (final_trade.total_profit / final_trade.cash_outflow) * 100
                 print(f"  收益率: {return_rate:.2f}%")
         
         print("=" * 100)
