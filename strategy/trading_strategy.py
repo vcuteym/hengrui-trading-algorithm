@@ -197,7 +197,7 @@ class TradingStrategy:
             if self.check_buy_condition(row):
                 trade = self.execute_buy(
                     date=row['日期'],
-                    price=row['股价'],
+                    price=row.get('股价', row.get('收盘', 0)),
                     pe=row['PE'],
                     drawdown=row['回撤']
                 )
@@ -208,7 +208,7 @@ class TradingStrategy:
             elif self.check_sell_condition(row):
                 trade = self.execute_sell(
                     date=row['日期'],
-                    price=row['股价'],
+                    price=row.get('股价', row.get('收盘', 0)),
                     pe=row['PE'],
                     drawdown=row['回撤']
                 )
@@ -217,14 +217,14 @@ class TradingStrategy:
         # 计算最终收益（使用最后一天的价格）
         if len(strategy_data) > 0 and self.total_shares > 0:
             last_row = strategy_data.iloc[-1]
-            final_value = self.total_shares * last_row['股价']
+            final_value = self.total_shares * last_row.get('股价', last_row.get('收盘', 0))
             final_profit = final_value - self.cash_outflow + self.cash_inflow
             
             # 添加最终持仓记录
             self.trades.append(TradeRecord(
                 date=last_row['日期'],
                 action='HOLD',
-                price=last_row['股价'],
+                price=last_row.get('股价', last_row.get('收盘', 0)),
                 pe=last_row['PE'],
                 drawdown=last_row['回撤'],
                 shares=0,
