@@ -11,9 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `data/reader.py` - 数据读取和预处理（处理PE.xlsx，计算回撤）
 - `strategy/trading_strategy.py` - 交易策略实现（买卖信号、持仓管理）
 - `visualization/plotter.py` - 图表绘制功能
-- `calculate_returns.py` - 收益率和资产曲线计算
-- `evaluate_strategy.py` - 策略评估（夏普比率、最大回撤等）
-- `strategy_comparison.py` - 策略对比分析（vs买入持有）
+- `scripts/calculate_returns.py` - 收益率和资产曲线计算
+- `scripts/evaluate_strategy.py` - 策略评估（夏普比率、最大回撤等）
+- `scripts/strategy_comparison.py` - 策略对比分析（vs买入持有）
+- `scripts/run_full_analysis.py` - 完整分析流程脚本
+- `scripts/view_results.py` - 结果查看工具
+- `docs/` - 项目文档目录
+- `tests/` - 测试文件目录
 
 ### 策略核心参数
 ```python
@@ -32,22 +36,22 @@ StrategyConfig(
 ### 运行策略
 ```bash
 # 完整分析流程（推荐）
-python run_full_analysis.py
+python scripts/run_full_analysis.py
 
 # 单独运行策略回测
-python run_strategy.py
+python scripts/run_strategy.py
 
 # 计算收益率曲线
-python calculate_returns.py
+python scripts/calculate_returns.py
 
 # 策略评估
-python evaluate_strategy.py
+python scripts/evaluate_strategy.py
 
 # 策略对比
-python strategy_comparison.py
+python scripts/strategy_comparison.py
 
 # 查看结果
-python view_results.py
+python scripts/view_results.py
 ```
 
 ### 测试命令

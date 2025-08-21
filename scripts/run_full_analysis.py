@@ -6,10 +6,14 @@
 
 import os
 import sys
+
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from data.reader import DataReader
 from strategy.trading_strategy import TradingStrategy, StrategyConfig
-from calculate_returns import calculate_asset_curve, plot_asset_curve, save_enhanced_excel
-from simple_visualization import main as run_visualization
+from scripts.calculate_returns import calculate_asset_curve, plot_asset_curve, save_enhanced_excel
+from scripts.simple_visualization import main as run_visualization
 import pandas as pd
 
 

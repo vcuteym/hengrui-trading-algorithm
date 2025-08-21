@@ -37,6 +37,9 @@ def calculate_asset_curve(file_path='report/strategy_trades.xlsx', data_file='PE
     df['日期'] = pd.to_datetime(df['日期'])
     
     # 读取完整的日数据
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from data.reader import DataReader
     reader = DataReader(data_file)
     daily_data = reader.process_data()
