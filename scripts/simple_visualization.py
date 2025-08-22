@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from data.reader import DataReader
 from visualization.plotter import StockPlotter
 
@@ -18,7 +22,7 @@ def main():
     
     # 确保输出目录存在
     import os
-    output_dir = 'visualization_report'
+    output_dir = 'report'
     os.makedirs(output_dir, exist_ok=True)
     
     # 生成综合图表

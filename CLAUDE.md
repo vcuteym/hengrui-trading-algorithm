@@ -1,174 +1,163 @@
-# 恒瑞交易算法测试项目 - 开发指南
+# 恒瑞交易算法测试项目规范
 
 ## 项目概述
-本项目用于恒瑞交易算法的开发和测试，主要数据文件为 `PE.xlsx`。
+本项目是一个基于PE分位数和回撤率的量化交易策略系统，用于分析恒瑞医药的历史数据并进行策略回测。
 
-## Git 版本控制规范
+## 文件组织规则
 
-### 分支管理策略
-
-1. **主分支 (main/master)**
-   - 保持稳定，只包含经过测试的代码
-   - 不直接在主分支上开发
-
-2. **功能分支命名规范**
-   - 新算法：`algorithm/算法名称` (例：`algorithm/momentum-strategy`)
-   - 新功能：`feature/功能名称` (例：`feature/data-preprocessing`)
-   - 修复：`fix/问题描述` (例：`fix/calculation-error`)
-   - 优化：`optimize/优化内容` (例：`optimize/performance`)
-
-### 开发流程
-
-1. **创建新分支**
-   ```bash
-   git checkout -b feature/新功能名称
-   ```
-
-2. **提交规范**
-   - 每修改一个文件或完成一个小功能就要提交
-   - 提交信息格式：
-     - `feat: 添加新功能`
-     - `fix: 修复问题`
-     - `refactor: 重构代码`
-     - `test: 添加测试`
-     - `docs: 更新文档`
-     - `style: 代码格式调整`
-
-3. **示例提交流程**
-   ```bash
-   git add 修改的文件
-   git commit -m "feat: 添加数据清洗功能"
-   ```
-
-### 测试要求
-
-1. **每个新功能必须测试**
-   - 单元测试：测试单个函数/方法
-   - 集成测试：测试功能模块
-   - 回测：验证算法效果
-
-2. **测试文件组织**
-   ```
-   tests/
-   ├── test_algorithms/    # 算法测试
-   ├── test_data/          # 数据处理测试
-   └── test_utils/         # 工具函数测试
-   ```
-
-3. **运行测试**
-   ```bash
-   # 运行所有测试
-   pytest
-   
-   # 运行特定测试
-   pytest tests/test_algorithms/
-   ```
-
-### 合并流程
-
-1. **功能完成后**
-   ```bash
-   # 切换到主分支
-   git checkout main
-   
-   # 更新主分支
-   git pull origin main
-   
-   # 合并功能分支
-   git merge feature/新功能名称
-   ```
-
-2. **推送到 GitHub**
-   ```bash
-   git push origin main
-   ```
-
-## 项目结构建议
+### 目录结构规范
+请严格遵循以下文件组织规则，确保文件总是放在适当的文件夹中：
 
 ```
-.
-├── PE.xlsx              # 主数据文件
-├── algorithms/          # 算法实现
-│   ├── __init__.py
-│   └── strategy.py
-├── data/               # 数据处理
-│   ├── __init__.py
-│   └── preprocessing.py
-├── tests/              # 测试文件
-│   └── test_*.py
-├── results/            # 结果输出
-├── logs/               # 日志文件
-├── requirements.txt    # 依赖包
-├── .gitignore         # Git忽略文件
-├── README.md          # 项目说明
-└── CLAUDE.md          # 本文件
-
+项目根目录/
+├── data/                    # 数据相关文件
+│   ├── *.py                # 数据读取和处理模块
+│   └── *.xlsx, *.csv       # 原始数据文件
+│
+├── strategy/                # 策略相关文件
+│   ├── trading_strategy.py # 交易策略实现
+│   ├── market_cycle.py     # 牛熊市周期分析
+│   └── *.py                # 其他策略模块
+│
+├── optimization/            # 优化相关文件
+│   ├── optimizer.py        # 优化器基类
+│   ├── grid_search.py      # 网格搜索
+│   ├── bayesian_optimizer.py # 贝叶斯优化
+│   └── optimization_result.py # 结果处理
+│
+├── visualization/           # 可视化相关文件
+│   ├── plotter.py          # 绘图模块
+│   └── *.py                # 其他可视化工具
+│
+├── scripts/                 # 可执行脚本
+│   ├── run_*.py            # 运行脚本
+│   ├── analyze_market_cycles.py # 牛熊市分析脚本
+│   ├── test_*.py           # 测试脚本
+│   ├── calculate_*.py      # 计算脚本
+│   └── *.py                # 其他工具脚本
+│
+├── tests/                   # 单元测试文件
+│   ├── test_*.py           # 测试文件
+│   └── conftest.py         # pytest配置
+│
+├── report/                  # 输出报告和结果
+│   ├── *.png               # 图表文件
+│   ├── *.xlsx              # Excel报告
+│   ├── *.csv               # CSV数据导出
+│   ├── *.json              # JSON数据文件
+│   └── *.html, *.pdf       # 其他格式报告
+│
+├── config/                  # 配置文件
+│   ├── *.json              # JSON配置
+│   ├── *.yaml              # YAML配置
+│   └── *.ini               # INI配置
+│
+├── docs/                    # 文档文件
+│   ├── README.md           # 项目说明
+│   ├── *.md                # Markdown文档
+│   └── 工作日志.md          # 工作记录
+│
+├── hooks/                   # Git钩子和自动化脚本
+│   ├── *.sh                # Shell脚本
+│   └── backups/            # 备份文件
+│
+├── test_optimization_results/ # 参数优化测试结果
+│   └── *.json              # 优化结果文件
+│
+├── PE.xlsx                  # 原始数据文件
+├── requirements.txt         # Python依赖
+├── CLAUDE.md               # 项目规范文档
+└── .gitignore              # Git忽略规则
 ```
 
-## 常用命令速查
+### 文件命名规范
 
-### Git 基础命令
+1. **Python模块**：
+   - 使用小写字母和下划线：`trading_strategy.py`
+   - 测试文件以`test_`开头：`test_reader.py`
+   - 运行脚本以动词开头：`run_strategy.py`, `calculate_returns.py`
+
+2. **数据文件**：
+   - 原始数据保持原名：`PE.xlsx`
+   - 导出数据包含日期或版本：`strategy_trades_20240815.xlsx`
+
+3. **报告文件**：
+   - 描述性命名：`asset_curve.png`, `strategy_evaluation.xlsx`
+   - 避免使用空格，用下划线代替
+
+### 禁止事项
+
+1. **不要**在根目录创建新的Python脚本，应放入`scripts/`
+2. **不要**将测试结果直接保存在根目录，应放入`report/`或`test_optimization_results/`
+3. **不要**在代码目录中保存输出文件
+4. **不要**创建重复功能的文件
+
+### 最佳实践
+
+1. **新功能开发**：
+   - 先在`scripts/`中创建原型脚本
+   - 稳定后将核心逻辑提取到相应模块目录
+
+2. **数据处理**：
+   - 原始数据放在`data/`或根目录
+   - 处理后的数据保存到`report/`
+
+3. **测试和优化**：
+   - 测试脚本放在`tests/`
+   - 优化结果保存到`test_optimization_results/`
+
+## 运行指南
+
+### 基本运行命令
 ```bash
-# 查看状态
-git status
+# 完整分析流程（包含牛熊市分析）
+python scripts/run_full_analysis.py
 
-# 查看分支
-git branch -a
+# 单独运行策略
+python scripts/run_strategy.py
 
-# 创建并切换分支
-git checkout -b 分支名
+# 牛熊市周期分析
+python scripts/analyze_market_cycles.py
 
-# 添加文件
-git add 文件名
-git add .  # 添加所有修改
+# 查看优化结果
+python scripts/view_results.py
 
-# 提交
-git commit -m "提交信息"
-
-# 查看提交历史
-git log --oneline
-
-# 推送到远程
-git push origin 分支名
+# 参数优化
+python run_optimization.py
 ```
 
-### 测试命令
-```bash
-# 运行测试
-pytest
+### 牛熊市分析功能
 
-# 运行测试并显示覆盖率
-pytest --cov=.
+**新增功能：** 根据PE.xlsx数据自动识别牛熊市区间
 
-# 运行特定测试文件
-pytest tests/test_specific.py
+**核心特性：**
+- 基于股价走势和PE分位数识别市场周期
+- 每个周期最少2年，确保可靠性
+- 分析策略在不同市场环境下的表现
+- 生成可视化图表和详细报告
+
+**输出文件：**
+- `report/market_cycles.json` - 周期数据（JSON格式）
+- `report/market_cycles.xlsx` - 周期汇总表
+- `report/market_cycles.png` - 牛熊市可视化图表
+- `report/market_cycles_summary.xlsx` - 周期统计汇总
+- `report/strategy_by_cycle.xlsx` - 策略在各周期的表现
+
+**识别结果示例：**
+```
+识别出 6 个市场周期:
+- 牛市: 5 个，平均持续 2.6 年
+- 熊市: 1 个，平均持续 3.8 年
 ```
 
-## 开发检查清单
-
-- [ ] 新功能在独立分支开发
-- [ ] 每个文件修改都有对应的 commit
-- [ ] 提交信息清晰明确
-- [ ] 新功能有对应的测试
-- [ ] 测试全部通过
-- [ ] 代码符合规范
-- [ ] 合并前更新主分支
-- [ ] 推送到 GitHub 远程仓库
+### 关键性能指标
+- 期初现金：60,000元
+- 目标收益率：> 500%
+- 最大可接受回撤：< 5%
+- 当前策略收益率：655.03%
 
 ## 注意事项
-
-1. **不要直接修改 PE.xlsx 原始数据文件**
-   - 创建副本进行测试
-   - 使用代码读取和处理数据
-
-2. **敏感信息处理**
-   - 不要提交包含密码、API密钥的文件
-   - 使用环境变量管理敏感配置
-
-3. **定期备份**
-   - 定期推送到 GitHub
-   - 重要版本打标签 (tag)
-
-## 联系与支持
-
-如有问题，请查看项目 README.md 或提交 Issue。
+- 所有新创建的文件必须遵循上述目录结构
+- 提交代码前运行 lint 和测试
+- 重要修改需要更新工作日志
+- 牛熊市区间最少2年，确保周期识别的可靠性

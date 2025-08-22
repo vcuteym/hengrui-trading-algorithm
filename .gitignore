@@ -38,4 +38,4 @@ htmlcov/
 
 # Logs
 *.log
-logs/
+logs/test_optimization_results/

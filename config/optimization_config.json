@@ -1,0 +1,62 @@
+{
+  "optimization_settings": {
+    "objective": "sharpe_ratio",
+    "n_trials": 100,
+    "n_jobs": 1,
+    "random_seed": 42,
+    "early_stopping": true,
+    "early_stopping_rounds": 20,
+    "verbose": true
+  },
+  
+  "parameter_ranges": {
+    "buy_pe_threshold": {
+      "min": 30,
+      "max": 70,
+      "step": 5,
+      "description": "买入PE阈值，当PE低于此值时考虑买入"
+    },
+    "sell_pe_threshold": {
+      "min": 60,
+      "max": 100,
+      "step": 5,
+      "description": "卖出PE阈值，当PE高于此值时考虑卖出"
+    },
+    "drawdown_threshold": {
+      "min": -0.40,
+      "max": -0.10,
+      "step": 0.05,
+      "description": "回撤阈值，当回撤超过此值时触发买入"
+    }
+  },
+  
+  "optimization_methods": {
+    "grid_search": {
+      "enabled": true,
+      "description": "网格搜索：遍历所有参数组合"
+    },
+    "bayesian": {
+      "enabled": true,
+      "description": "贝叶斯优化：智能搜索最优参数",
+      "n_initial_points": 10,
+      "acquisition_function": "EI"
+    }
+  },
+  
+  "evaluation_metrics": [
+    "total_return",
+    "annual_return",
+    "sharpe_ratio",
+    "max_drawdown",
+    "profit_factor",
+    "win_rate",
+    "total_trades"
+  ],
+  
+  "output_settings": {
+    "save_results": true,
+    "results_dir": "./optimization_results",
+    "generate_plots": true,
+    "generate_report": true
+  }
+}

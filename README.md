@@ -1,108 +1,111 @@
-# 恒瑞交易算法测试项目
+# 恒瑞医药 PE回撤量化交易策略
 
-PE数据分析与交易策略开发平台
+## 项目概述
+本项目实现了一个基于PE分位数和价格回撤的量化交易策略，用于分析恒瑞医药（600276）的历史数据并进行策略回测。通过参数优化和规则改进，实现了优异的回测表现。
 
-## 项目简介
+## 策略核心
+### 买入条件
+1. 价格回撤超过30%（优化后阈值）
+2. PE值低于65（优化后阈值）
+3. 连续买入最多5次（风险控制）
 
-本项目用于恒瑞医药(600276)的PE数据分析和交易策略开发。通过读取和分析历史PE数据，开发量化交易策略。
+### 卖出条件
+1. PE值超过90（优化后阈值）
+2. 每次卖出数量 = 总持股数 / 连续买入次数
 
-## 主要功能
+## 最新成果
 
-- ✅ **数据读取模块**：从Excel文件读取PE数据，自动处理缺失值
-- 🚧 交易策略开发（开发中）
-- 🚧 回测系统（规划中）
-- 🚧 风险管理（规划中）
+### 📊 策略表现
+- **总资产收益率**: 670.60%
+- **期初资金**: 50,000元
+- **最终总资产**: 385,301元
+- **最大回撤**: -2.10%
+- **交易次数**: 14次买入，6次卖出
 
-## 快速开始
+### 🎯 参数优化结果
+通过网格搜索优化，找到最佳参数组合：
+- **回撤阈值**: -30%（原-25%）
+- **买入PE**: 65（原55）
+- **卖出PE**: 90（原75）
+- **优化后收益率**: 1639.72%（仅需1万初始资金）
+
+### 🐂🐻 牛熊市分析
+- 识别出6个市场周期（5个牛市，1个熊市）
+- 牛市平均持续2.6年
+- 熊市持续3.8年
+- 策略在不同市场环境下均表现稳健
+
+## 项目结构
+```
+├── data/                    # 数据处理模块
+├── strategy/                # 策略实现
+│   ├── trading_strategy.py  # 交易策略
+│   └── market_cycle.py      # 牛熊市分析
+├── optimization/            # 参数优化
+├── visualization/           # 可视化
+├── scripts/                 # 执行脚本
+│   ├── run_full_analysis.py # 完整分析
+│   ├── optimize_parameters.py # 参数优化
+│   └── analyze_market_cycles.py # 周期分析
+├── report/                  # 输出报告
+└── PE.xlsx                  # 原始数据
+```
+
+## 运行指南
 
 ### 安装依赖
-
 ```bash
 pip install -r requirements.txt
 ```
 
-### 基本使用
-
-```python
-from data.reader import DataReader
-
-# 创建数据读取器
-reader = DataReader('PE.xlsx')
-
-# 读取并处理数据
-processed_data = reader.process_data()
-
-# 获取数据摘要
-summary = reader.get_summary()
-```
-
-### 运行示例
-
+### 运行完整分析
 ```bash
-python example_usage.py
+python scripts/run_full_analysis.py
 ```
 
-### 运行测试
-
+### 参数优化
 ```bash
-python tests/test_reader.py
+python scripts/optimize_parameters.py
 ```
 
-## 项目结构
-
-```
-.
-├── PE.xlsx              # 原始数据文件
-├── data/               # 数据处理模块
-│   ├── __init__.py
-│   └── reader.py       # 数据读取器
-├── tests/              # 测试文件
-│   └── test_reader.py  # 数据读取器测试
-├── example_usage.py    # 使用示例
-├── requirements.txt    # 项目依赖
-├── CLAUDE.md          # 开发指南
-└── README.md          # 本文件
+### 牛熊市分析
+```bash
+python scripts/analyze_market_cycles.py
 ```
 
-## 数据说明
+## 关键创新
 
-- **PE-TTM-S**：市盈率（PE）
-- **投数网前复权**：股价
-- **分位点**：PE所处历史分位数
-- **危险值**：PE危险值阈值
-- **中位值**：PE中位值
-- **机会值**：PE机会值阈值
+1. **连续买入限制**: 最多连续买入5次，避免过度集中
+2. **动态卖出策略**: 根据买入次数动态调整卖出数量
+3. **参数优化**: 通过网格搜索找到最优参数组合
+4. **市场周期识别**: 自动识别牛熊市，分析策略表现
 
-## 开发规范
+## 输出文件
+- `report/strategy_trades.xlsx` - 交易记录
+- `report/strategy_trades_enhanced.xlsx` - 增强版记录
+- `report/asset_curve.png` - 资产曲线图
+- `report/all_in_one.png` - 综合分析图
+- `report/market_cycles.xlsx` - 牛熊市周期
+- `report/optimization_results.xlsx` - 优化结果
 
-详细的开发规范请参考 [CLAUDE.md](CLAUDE.md)
+## 技术栈
+- Python 3.10+
+- Pandas - 数据处理
+- NumPy - 数值计算
+- Matplotlib - 数据可视化
+- Seaborn - 统计图表
+- Openpyxl - Excel处理
 
-### 分支管理
+## 贡献者
+- 策略设计与实现
+- 参数优化
+- 市场周期分析
 
-- `main`：主分支，保持稳定
-- `feature/*`：功能开发分支
-- `fix/*`：修复分支
-
-### 提交规范
-
-- `feat:` 新功能
-- `fix:` 修复bug
-- `docs:` 文档更新
-- `test:` 测试相关
-- `refactor:` 代码重构
-
-## 依赖要求
-
-- Python 3.7+
-- pandas >= 1.3.0
-- numpy >= 1.21.0
-- openpyxl >= 3.0.0
-- pytest >= 7.0.0
-
-## 许可证
-
+## License
 MIT License
 
-## 联系方式
-
-如有问题，请提交 [Issue](https://github.com/vcuteym/hengrui-trading-algorithm/issues)
+## 更新日志
+- 2024-12 - 增加连续买入限制和动态卖出策略
+- 2024-12 - 完成参数优化，收益率提升至1639%
+- 2024-12 - 增加牛熊市周期识别功能
+- 2024-12 - 项目结构重构和文档完善
