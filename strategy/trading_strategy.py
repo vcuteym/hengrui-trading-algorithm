@@ -9,13 +9,13 @@ from dataclasses import dataclass, field
 class StrategyConfig:
     """策略配置参数"""
     # 参数1：回撤阈值（负数，例如-0.25表示-25%）
-    drawdown_threshold: float = -0.25
+    drawdown_threshold: float = -0.30  # 优化后的最佳值（原-0.25）
     
     # 参数2：买入PE阈值
-    buy_pe_threshold: float = 55
+    buy_pe_threshold: float = 65  # 优化后的最佳值（原55）
     
     # 参数3：卖出PE阈值
-    sell_pe_threshold: float = 75
+    sell_pe_threshold: float = 90  # 优化后的最佳值（原75）
     
     # 参数4：起始日期
     start_date: str = '2010-07-22'
@@ -24,7 +24,8 @@ class StrategyConfig:
     buy_amount: float = 10000  # 每次买入金额
     min_shares: float = 0.01   # 最小允许买入数量
     min_trade_interval_days: int = 30  # 最小交易间隔（天）
-    sell_ratio: float = 0.5     # 每次卖出比例
+    sell_ratio: float = 0.5     # 每次卖出比例（废弃，改用新规则）
+    max_consecutive_buys: int = 5  # 最大连续买入次数
 
 
 @dataclass
@@ -69,6 +70,8 @@ class TradingStrategy:
         self.cash_inflow = 0.0   # 现金流入（累计卖出金额）
         self.last_buy_date = None
         self.last_sell_date = None
+        self.consecutive_buys = 0  # 连续买入次数
+        self.total_buy_times = 0   # 总买入次数（用于计算卖出数量）
         
     def check_buy_condition(self, row: pd.Series) -> bool:
         """
@@ -93,7 +96,10 @@ class TradingStrategy:
         else:
             condition3 = True
         
-        return condition1 and condition2 and condition3
+        # 条件4：连续买入次数不超过最大限制
+        condition4 = self.consecutive_buys < self.config.max_consecutive_buys
+        
+        return condition1 and condition2 and condition3 and condition4
     
     def check_sell_condition(self, row: pd.Series) -> bool:
         """
@@ -134,6 +140,8 @@ class TradingStrategy:
             self.total_shares += shares
             self.cash_outflow += amount  # 买入增加现金流出
             self.last_buy_date = date
+            self.consecutive_buys += 1  # 增加连续买入次数
+            self.total_buy_times += 1   # 增加总买入次数
         
         current_value = self.total_shares * price
         total_profit = current_value - self.cash_outflow + self.cash_inflow
@@ -155,12 +163,16 @@ class TradingStrategy:
     
     def execute_sell(self, date: pd.Timestamp, price: float, pe: float, drawdown: float) -> TradeRecord:
         """执行卖出操作"""
-        shares_to_sell = self.total_shares * self.config.sell_ratio
+        # 新规则：每次卖出数量 = 总持股数 / 连续买入次数
+        # 使用连续买入次数，如果为0则使用1（至少卖出全部）
+        divisor = max(self.consecutive_buys, 1)
+        shares_to_sell = self.total_shares / divisor
         amount = shares_to_sell * price
         
         self.total_shares -= shares_to_sell
         self.cash_inflow += amount  # 卖出增加现金流入
         self.last_sell_date = date
+        self.consecutive_buys = 0  # 卖出后重置连续买入次数
         
         current_value = self.total_shares * price
         total_profit = current_value - self.cash_outflow + self.cash_inflow

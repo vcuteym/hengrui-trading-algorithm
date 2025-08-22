@@ -15,6 +15,7 @@ from strategy.trading_strategy import TradingStrategy, StrategyConfig
 from scripts.calculate_returns import calculate_asset_curve, plot_asset_curve, save_enhanced_excel
 from scripts.simple_visualization import main as run_visualization
 import pandas as pd
+import numpy as np
 
 
 def main():
@@ -113,13 +114,13 @@ def main():
     print("\n[步骤2] 计算资产曲线和收益率")
     print("-" * 40)
     
-    df_enhanced = calculate_asset_curve('report/strategy_trades.xlsx')
+    df_enhanced, daily_data = calculate_asset_curve('report/strategy_trades.xlsx')
     
     # 3. 生成资产曲线图
     print("\n[步骤3] 生成资产曲线图")
     print("-" * 40)
     
-    plot_asset_curve(df_enhanced, save_path='report/asset_curve.png')
+    plot_asset_curve(df_enhanced, daily_data=daily_data, save_path='report/asset_curve.png')
     
     # 4. 保存增强版Excel
     print("\n[步骤4] 保存增强版Excel文件")
@@ -155,6 +156,45 @@ def main():
     print(f"   • 增强版记录: report/strategy_trades_enhanced.xlsx")
     print(f"   • 资产曲线图: report/asset_curve.png")
     print(f"   • PE股价图: report/all_in_one.png")
+    
+    # 6. 运行牛熊市周期分析
+    print(f"\n[步骤6] 牛熊市周期分析")
+    print("-" * 40)
+    
+    try:
+        from strategy.market_cycle import MarketCycleAnalyzer
+        
+        # 创建周期分析器
+        analyzer = MarketCycleAnalyzer(min_cycle_years=2.0)
+        
+        # 识别市场周期
+        cycles = analyzer.identify_cycles(data)
+        print(f"识别出 {len(cycles)} 个市场周期:")
+        
+        bull_cycles = [c for c in cycles if c['type'] == 'bull']
+        bear_cycles = [c for c in cycles if c['type'] == 'bear']
+        if bull_cycles:
+            print(f"  - 牛市: {len(bull_cycles)} 个，平均持续 {np.mean([c['duration_years'] for c in bull_cycles]):.1f} 年")
+        if bear_cycles:
+            print(f"  - 熊市: {len(bear_cycles)} 个，平均持续 {np.mean([c['duration_years'] for c in bear_cycles]):.1f} 年")
+        
+        # 导出周期数据
+        analyzer.export_cycles(cycles, 'report/market_cycles.json')
+        
+        # 分析策略在不同周期的表现
+        cycle_analysis = analyzer.analyze_cycles_with_strategy(data, df_enhanced)
+        print(f"\n策略在不同市场环境的表现:")
+        if bull_cycles:
+            bull_profits = [c.get('cycle_profit', 0) for c in bull_cycles]
+            print(f"  - 牛市平均策略收益: {np.mean(bull_profits):.0f}元")
+        if bear_cycles:
+            bear_profits = [c.get('cycle_profit', 0) for c in bear_cycles]
+            print(f"  - 熊市平均策略收益: {np.mean(bear_profits):.0f}元")
+        
+        print(f"   • 牛熊市分析: report/market_cycles.json, report/market_cycles.xlsx")
+        
+    except Exception as e:
+        print(f"周期分析出现错误: {e}")
     
     print("\n" + "=" * 80)
     

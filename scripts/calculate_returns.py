@@ -122,11 +122,10 @@ def plot_asset_curve(df, daily_data=None, save_path='report/asset_curve.png'):
         daily_data: 完整的日数据DataFrame（包含每日股价）
         save_path: 图表保存路径
     """
-    fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
     fig.suptitle('恒瑞医药 PE回撤策略 - 资产曲线分析', fontsize=16, fontweight='bold')
     
     # 1. 总资产曲线
-    ax1 = axes[0]
     ax1.plot(df['日期'], df['总资产'], 'b-', linewidth=2, label='总资产')
     ax1.axhline(y=df['期初现金'].iloc[0], color='gray', linestyle='--', alpha=0.5, label='期初现金')
     ax1.fill_between(df['日期'], df['期初现金'].iloc[0], df['总资产'], 
@@ -151,8 +150,7 @@ def plot_asset_curve(df, daily_data=None, save_path='report/asset_curve.png'):
     ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x/10000:.0f}万'))
     
     # 2. 收益率曲线 + 股价（双Y轴）
-    ax2 = axes[1]
-    
+    # 2. 收益率曲线（第二个子图）
     # 左Y轴：收益率
     ax2.plot(df['日期'], df['总资产收益率'], 'r-', linewidth=2, label='总资产收益率', zorder=5)
     ax2.axhline(y=0, color='black', linestyle='-', alpha=0.3)
@@ -220,7 +218,7 @@ def plot_asset_curve(df, daily_data=None, save_path='report/asset_curve.png'):
     ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=10)
     
     # 设置日期格式
-    for ax in axes:
+    for ax in [ax1, ax2]:
         ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
         ax.xaxis.set_minor_locator(mdates.MonthLocator(interval=6))
